@@ -21,5 +21,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
 
 // Outputs needed by the web app
 output loginServer string = acr.properties.loginServer
+#disable-next-line outputs-should-not-contain-secrets
 output adminUsername string = acrAdminUserEnabled ? acr.listCredentials().username : ''
+#disable-next-line outputs-should-not-contain-secrets
 output adminPassword string = acrAdminUserEnabled ? acr.listCredentials().passwords[0].value : ''

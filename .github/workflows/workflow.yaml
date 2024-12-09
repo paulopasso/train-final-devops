@@ -2,48 +2,49 @@ name: Deploy Infrastructure and Application
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 env:
   IMAGE_NAME: demo-image
-  RESOURCE_GROUP: BCSAI2024-DEVOPS-STUDENTS-B-DEV 
+  RESOURCE_GROUP: BCSAI2024-DEVOPS-STUDENTS-B-DEV
+  ACR_NAME: demo-acr
 
 jobs:
   deploy-infrastructure:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          
+
       - name: Deploy Bicep
         uses: azure/arm-deploy@v1
+        id: bicep
         with:
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
           resourceGroupName: ${{ env.RESOURCE_GROUP }}
           template: ./main.bicep
           parameters: ./main.parameters.json
-        id: bicep
 
   build-and-push:
     needs: deploy-infrastructure
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      
+
       - name: ACR Login
         run: |
           az acr login --name ${{ secrets.ACR_NAME }}
-      
+
       - name: Build and Push
         run: |
           docker build -t ${{ secrets.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} ./backend
@@ -57,9 +58,10 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.WEBAPP_NAME }}
           images: ${{ secrets.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+

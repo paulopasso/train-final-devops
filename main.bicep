@@ -19,6 +19,42 @@ param containerRegistryImageName string
 @description('The version/tag of the container image')
 param containerRegistryImageVersion string
 
+// Add these parameters
+@description('The key vault name')
+param keyVaultName string
+
+// Add Key Vault module
+module keyVault 'modules/key-vault.bicep' = {
+  name: 'keyVaultDeployment'
+  params: {
+    name: keyVaultName
+    location: location
+  }
+}
+
+// Reference the deployed Key Vault
+resource keyVaultReference 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
+  name: keyVaultName
+  scope: resourceGroup()
+}
+
+// Add Key Vault secrets for ACR credentials
+resource acrPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVaultReference
+  name: 'acrPassword'
+  properties: {
+    value: acr.outputs.adminPassword
+  }
+}
+
+resource acrUsernameSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVaultReference
+  name: 'acrUsername'
+  properties: {
+    value: acr.outputs.adminUsername
+  }
+}
+
 // ACR deployment
 module acr 'modules/acr.bicep' = {
   name: 'acrDeployment'
@@ -59,11 +95,12 @@ module webApp 'modules/web-app.bicep' = {
       linuxFxVersion: 'DOCKER|${acr.outputs.loginServer}/${containerRegistryImageName}:${containerRegistryImageVersion}'
       appCommandLine: ''
     }
+    // In the web app module parameters
     appSettingsKeyValuePairs: {
       WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'false'
       DOCKER_REGISTRY_SERVER_URL: 'https://${acr.outputs.loginServer}'
-      DOCKER_REGISTRY_SERVER_USERNAME: acr.outputs.adminUsername
-      DOCKER_REGISTRY_SERVER_PASSWORD: acr.outputs.adminPassword
+      DOCKER_REGISTRY_SERVER_USERNAME: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.keyVaultUri}secrets/acrUsername)'
+      DOCKER_REGISTRY_SERVER_PASSWORD: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.keyVaultUri}secrets/acrPassword)'
     }
   }
   dependsOn: [
