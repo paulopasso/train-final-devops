@@ -1,12 +1,33 @@
 name: Deploy infra and backend of MSDOCS
-
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    env:
+      RESOURCE_GROUP: BCSAI2024-DEVOPS-STUDENTS-B-DEV
+      LOCATION: "westeurope"
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to Azure CLI
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Azure Infrastructure
+        uses: azure/arm-deploy@v1
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
+          resourceGroupName: ${{ env.RESOURCE_GROUP }}
+          template: ./main.bicep
+          parameters: ./main.parameters.json
+
+  build-and-push-image:
+    needs: deploy-infrastructure
     runs-on: ubuntu-latest
     env:
       KEY_VAULT_NAME_DEV: "dkumlin-demo-kv"
@@ -14,7 +35,6 @@ jobs:
       KEY_VAULT_SECRET_ACR_PASSWORD: "acr-password"
       CONTAINER_REGISTRY_SERVER_URL_DEV: "dkumlin-demo.azurecr.io"
       IMAGE_NAME_DEV: "dkumlin-demo-image"
-
     steps:
       - uses: actions/checkout@v3
 
@@ -29,7 +49,6 @@ jobs:
         with:
           inlineScript: |
             echo "Attempting to access key vault: ${{ env.KEY_VAULT_NAME_DEV }}"
-
             username=$(az keyvault secret show --name ${{ env.KEY_VAULT_SECRET_ACR_USERNAME }} --vault-name ${{ env.KEY_VAULT_NAME_DEV }} --query value -o tsv)
             password=$(az keyvault secret show --name ${{ env.KEY_VAULT_SECRET_ACR_PASSWORD }} --vault-name ${{ env.KEY_VAULT_NAME_DEV }} --query value -o tsv)
 
@@ -51,8 +70,21 @@ jobs:
           docker push ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:${{ steps.image-version.outputs.version }}
           docker push ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:latest
 
+  deploy-webapp:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    env:
+      CONTAINER_REGISTRY_SERVER_URL_DEV: "dkumlin-demo.azurecr.io"
+      IMAGE_NAME_DEV: "dkumlin-demo-image"
+    steps:
+      - name: Login to Azure CLI
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: "your-web-app-name"
-          images: "${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:${{ steps.image-version.outputs.version }}"
+          app-name: "dkumlin-demo-webapp"
+          images: "${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:latest"
+
