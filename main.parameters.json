@@ -6,23 +6,22 @@
       "value": "westeurope"
     },
     "acrName": {
-      "value": "demo-acr"
+      "value": "dkumlin-demo-acr"
     },
     "appServicePlanName": {
-      "value": "demo-service-plan"
+      "value": "dkumlin-demo-service-plan"
     },
     "webAppName": {
-      "value": "demo-web-app"
+      "value": "dkumlin-demo-web-app"
     },
     "containerRegistryImageName": {
-      "value": "demo-image"
+      "value": "dkumlin-demo-image"
     },
     "containerRegistryImageVersion": {
       "value": "latest"
     },
     "keyVaultName": {
-      "value": "demo-kv"
+      "value": "dkumlin-demo-kv"
     }
   }
 }
-

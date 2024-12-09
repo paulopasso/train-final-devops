@@ -1,67 +1,58 @@
-name: Deploy Infrastructure and Application
+name: Deploy infra and backend of MSDOCS
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-env:
-  IMAGE_NAME: demo-image
-  RESOURCE_GROUP: BCSAI2024-DEVOPS-STUDENTS-B-DEV
-  ACR_NAME: demo-acr
-
 jobs:
-  deploy-infrastructure:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      KEY_VAULT_NAME_DEV: "dkumlin-demo-kv"
+      KEY_VAULT_SECRET_ACR_USERNAME: "acr-username"
+      KEY_VAULT_SECRET_ACR_PASSWORD: "acr-password"
+      CONTAINER_REGISTRY_SERVER_URL_DEV: "dkumlin-demo.azurecr.io"
+      IMAGE_NAME_DEV: "dkumlin-demo-image"
+
     steps:
       - uses: actions/checkout@v3
 
-      - name: Azure Login
+      - name: Login to Azure CLI
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy Bicep
-        uses: azure/arm-deploy@v1
-        id: bicep
+      - name: Get Docker Registry Credentials
+        id: acr-creds-dev
+        uses: azure/CLI@v1
         with:
-          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
-          resourceGroupName: ${{ env.RESOURCE_GROUP }}
-          template: ./main.bicep
-          parameters: ./main.parameters.json
+          inlineScript: |
+            echo "Attempting to access key vault: ${{ env.KEY_VAULT_NAME_DEV }}"
 
-  build-and-push:
-    needs: deploy-infrastructure
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+            username=$(az keyvault secret show --name ${{ env.KEY_VAULT_SECRET_ACR_USERNAME }} --vault-name ${{ env.KEY_VAULT_NAME_DEV }} --query value -o tsv)
+            password=$(az keyvault secret show --name ${{ env.KEY_VAULT_SECRET_ACR_PASSWORD }} --vault-name ${{ env.KEY_VAULT_NAME_DEV }} --query value -o tsv)
 
-      - name: Azure Login
-        uses: azure/login@v1
+      - name: Docker Login
+        uses: azure/docker-login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          login-server: ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}
+          username: ${{ steps.acr-creds-dev.outputs.username }}
+          password: ${{ steps.acr-creds-dev.outputs.password }}
 
-      - name: ACR Login
+      - name: Set Image Version
+        id: image-version
+        run: echo "version=$(date +'%Y.%m.%d.%H.%M')" >> $GITHUB_OUTPUT
+
+      - name: Build and Push Docker Image
         run: |
-          az acr login --name ${{ secrets.ACR_NAME }}
-
-      - name: Build and Push
-        run: |
-          docker build -t ${{ secrets.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} ./backend
-          docker push ${{ secrets.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
-
-  deploy-webapp:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          docker build -t ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:${{ steps.image-version.outputs.version }} backend/ 
+          docker tag ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:${{ steps.image-version.outputs.version }} ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:latest
+          docker push ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:${{ steps.image-version.outputs.version }}
+          docker push ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:latest
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ secrets.WEBAPP_NAME }}
-          images: ${{ secrets.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
-
+          app-name: "your-web-app-name"
+          images: "${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:${{ steps.image-version.outputs.version }}"

@@ -41,7 +41,7 @@ resource keyVaultReference 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
 // Add Key Vault secrets for ACR credentials
 resource acrPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVaultReference
-  name: 'acrPassword'
+  name: 'acr-password'
   properties: {
     value: acr.outputs.adminPassword
   }
@@ -49,7 +49,7 @@ resource acrPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
 
 resource acrUsernameSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVaultReference
-  name: 'acrUsername'
+  name: 'acr-username'
   properties: {
     value: acr.outputs.adminUsername
   }
