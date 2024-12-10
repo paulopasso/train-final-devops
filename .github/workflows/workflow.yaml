@@ -33,7 +33,7 @@ jobs:
       KEY_VAULT_NAME_DEV: "dkumlin-demo-kv"
       KEY_VAULT_SECRET_ACR_USERNAME: "acr-username"
       KEY_VAULT_SECRET_ACR_PASSWORD: "acr-password"
-      CONTAINER_REGISTRY_SERVER_URL_DEV: "dkumlin-demo.azurecr.io"
+      CONTAINER_REGISTRY_SERVER_URL_DEV: "dkumlinacrdemo.io"
       IMAGE_NAME_DEV: "dkumlin-demo-image"
     steps:
       - uses: actions/checkout@v3
@@ -87,4 +87,3 @@ jobs:
         with:
           app-name: "dkumlin-demo-webapp"
           images: "${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:latest"
-

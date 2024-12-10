@@ -6,7 +6,7 @@
       "value": "westeurope"
     },
     "acrName": {
-      "value": "dkumlin-demo-acr"
+      "value": "dkumlinacrdemo"
     },
     "appServicePlanName": {
       "value": "dkumlin-demo-service-plan"
