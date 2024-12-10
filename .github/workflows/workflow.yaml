@@ -78,6 +78,7 @@ jobs:
     env:
       CONTAINER_REGISTRY_SERVER_URL_DEV: "dkumlin-demo.azurecr.io"
       IMAGE_NAME_DEV: "dkumlin-demo-image"
+      WEB_APP: "dkumlin-demo-web-app"
     steps:
       - name: Login to Azure CLI
         uses: azure/login@v1
@@ -87,5 +88,5 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: "dkumlin-demo-webapp"
+          app-name: env.WEB_APP
           images: "${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:latest"
