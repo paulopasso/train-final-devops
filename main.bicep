@@ -52,9 +52,6 @@ module acr 'modules/acr.bicep' = {
     keyVaultSecretNameAdminPassword0: 'acr-password0'
     keyVaultSecretNameAdminPassword1: 'acr-password1'
   }
-  dependsOn: [
-    keyVault
-  ]
 }
 
 // App Service Plan deployment
@@ -83,7 +80,6 @@ module webApp 'modules/web-app.bicep' = {
   }
   dependsOn: [
     acr
-    appServicePlan
   ]
 }
 

@@ -1,8 +1,6 @@
 param keyVaultResourceId string
 param keyVaultSecretNameAdminUsername string
-#disable-next-line secure-secrets-in-params
 param keyVaultSecretNameAdminPassword0 string
-#disable-next-line secure-secrets-in-params
 param keyVaultSecretNameAdminPassword1 string
 
 @description('The name of the Azure Container Registry')
@@ -53,11 +51,3 @@ resource secretAdminUserPassword1 'Microsoft.KeyVault/vaults/secrets@2023-02-01'
     value: containerRegistry.listCredentials().passwords[1].value
   }
 }
-
-#disable-next-line outputs-should-not-contain-secrets
-output containerRegistryUserName string = containerRegistry.listCredentials().username
-#disable-next-line outputs-should-not-contain-secrets
-output containerRegistryPassword0 string = containerRegistry.listCredentials().passwords[0].value
-#disable-next-line outputs-should-not-contain-secrets
-output containerRegistryPassword1 string = containerRegistry.listCredentials().passwords[1].value
-output containerRegistryLoginServer string = containerRegistry.properties.loginServer
