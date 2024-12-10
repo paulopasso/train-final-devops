@@ -25,7 +25,7 @@ param keyVaultName string
 
 // Add Key Vault module
 module keyVault 'modules/key-vault.bicep' = {
-  name: 'keyVaultDeployment'
+  name: 'keyVault'
   params: {
     name: keyVaultName
     location: location
@@ -35,7 +35,10 @@ module keyVault 'modules/key-vault.bicep' = {
 // Reference the deployed Key Vault
 resource keyVaultReference 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   name: keyVaultName
-  scope: resourceGroup()
+  dependsOn: [
+    keyVault
+  ]
+
 }
 
 // Add Key Vault secrets for ACR credentials
