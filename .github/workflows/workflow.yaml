@@ -67,7 +67,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:${{ steps.image-version.outputs.version }} backend/ 
+          docker build -t ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:${{ steps.image-version.outputs.version }} . 
           docker tag ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:${{ steps.image-version.outputs.version }} ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:latest
           docker push ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:${{ steps.image-version.outputs.version }}
           docker push ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:latest
