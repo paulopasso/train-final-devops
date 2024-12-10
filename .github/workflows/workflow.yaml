@@ -44,7 +44,7 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Get Docker Registry Credentials
-        id: acr-creds-dev
+        id: acr-creds
         uses: azure/CLI@v1
         with:
           inlineScript: |
@@ -58,8 +58,8 @@ jobs:
         uses: azure/docker-login@v2
         with:
           login-server: ${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}
-          username: ${{ steps.acr-creds-dev.outputs.username }}
-          password: ${{ steps.acr-creds-dev.outputs.password }}
+          username: ${{ steps.acr-creds.outputs.username }}
+          password: ${{ steps.acr-creds.outputs.password }}
 
       - name: Set Image Version
         id: image-version
