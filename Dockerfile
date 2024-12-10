@@ -10,4 +10,4 @@ COPY . .
 
 EXPOSE 50505
 
-ENTRYPOINT ["gunicorn", "app:app"]
+ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
