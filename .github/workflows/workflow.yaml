@@ -88,5 +88,5 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: env.WEB_APP
+          app-name: "{{ env.WEB_APP }}"
           images: "${{ env.CONTAINER_REGISTRY_SERVER_URL_DEV }}/${{ env.IMAGE_NAME_DEV }}:latest"
