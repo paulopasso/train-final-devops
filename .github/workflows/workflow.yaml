@@ -30,7 +30,7 @@ jobs:
     needs: deploy-infrastructure
     runs-on: ubuntu-latest
     env:
-      KEY_VAULT_NAME_DEV: "dkumlin-demo-kv"
+      KEY_VAULT_NAME_DEV: "dkumlin-demo-keyvault"
       KEY_VAULT_SECRET_ACR_USERNAME: "acr-username"
       KEY_VAULT_SECRET_ACR_PASSWORD: "acr-password"
       CONTAINER_REGISTRY_SERVER_URL_DEV: "dkumlinacrdemo.io"

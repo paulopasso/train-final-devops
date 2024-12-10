@@ -12,13 +12,26 @@ param containerRegistryImageName string
 param containerRegistryImageVersion string
 @description('The key vault name')
 param keyVaultName string
+@description('Role assignments for the Key Vault')
+param keyVaultRoleAssignments array = []
 
-// Add Key Vault module
+// ACR deployment
+module acr 'modules/acr.bicep' = {
+  name: 'acrDeployment'
+  params: {
+    name: acrName
+    location: location
+    acrAdminUserEnabled: true
+  }
+}
+
+// Initial Key Vault deployment
 module keyVault 'modules/key-vault.bicep' = {
   name: 'keyVault'
   params: {
-    name: keyVaultName
+    roleAssignments: keyVaultRoleAssignments
     location: location
+    keyVaultName: keyVaultName
   }
 }
 
@@ -44,16 +57,6 @@ resource acrUsernameSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   name: 'acr-username'
   properties: {
     value: acr.outputs.adminUsername
-  }
-}
-
-// ACR deployment
-module acr 'modules/acr.bicep' = {
-  name: 'acrDeployment'
-  params: {
-    name: acrName
-    location: location
-    acrAdminUserEnabled: true
   }
 }
 
@@ -98,16 +101,13 @@ module webApp 'modules/web-app.bicep' = {
   ]
 }
 
-resource webAppKeyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, webApp.name, 'Key Vault Secrets User')
+// Add RBAC role assignment for web app to access Key Vault secrets
+resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(keyVaultReference.id, webApp.name, 'Key Vault Secrets User')
   scope: keyVaultReference
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
     principalId: webApp.outputs.principalId
     principalType: 'ServicePrincipal'
   }
-  dependsOn: [
-    webApp
-    keyVault
-  ]
 }
