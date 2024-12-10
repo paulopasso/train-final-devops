@@ -1,25 +1,15 @@
-targetScope = 'resourceGroup'
-
-// Parameters
 @description('The location for all resources')
 param location string
-
 @description('The name of the Container Registry')
 param acrName string
-
 @description('The name of the App Service Plan')
 param appServicePlanName string
-
 @description('The name of the Web App')
 param webAppName string
-
 @description('The name of the container image')
 param containerRegistryImageName string
-
 @description('The version/tag of the container image')
 param containerRegistryImageVersion string
-
-// Add these parameters
 @description('The key vault name')
 param keyVaultName string
 
@@ -38,7 +28,6 @@ resource keyVaultReference 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   dependsOn: [
     keyVault
   ]
-
 }
 
 // Add Key Vault secrets for ACR credentials
@@ -94,20 +83,39 @@ module webApp 'modules/web-app.bicep' = {
     location: location
     kind: 'app'
     serverFarmResourceId: appServicePlan.outputs.id
+    identity: {
+      type: 'SystemAssigned'
+    }
     siteConfig: {
       linuxFxVersion: 'DOCKER|${acr.outputs.loginServer}/${containerRegistryImageName}:${containerRegistryImageVersion}'
       appCommandLine: ''
     }
-    // In the web app module parameters
     appSettingsKeyValuePairs: {
       WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'false'
       DOCKER_REGISTRY_SERVER_URL: 'https://${acr.outputs.loginServer}'
-      DOCKER_REGISTRY_SERVER_USERNAME: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.keyVaultUri}secrets/acrUsername)'
-      DOCKER_REGISTRY_SERVER_PASSWORD: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.keyVaultUri}secrets/acrPassword)'
+      DOCKER_REGISTRY_SERVER_USERNAME: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.keyVaultUri}/secrets/acr-username/)'
+      DOCKER_REGISTRY_SERVER_PASSWORD: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.keyVaultUri}/secrets/acr-password/)'
     }
   }
   dependsOn: [
     acr
     appServicePlan
+    acrPasswordSecret
+    acrUsernameSecret
+  ]
+}
+
+// Add RBAC role assignment for web app to access Key Vault secrets
+resource webAppKeyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(webApp.outputs.principalId, keyVault.outputs.keyVaultUri, 'Key Vault Secrets User')
+  scope: keyVaultReference
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
+    principalId: webApp.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [
+    webApp
+    keyVault
   ]
 }
