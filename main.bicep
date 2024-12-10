@@ -1,37 +1,35 @@
+// Parameters
 @description('The location for all resources')
 param location string
+
 @description('The name of the Container Registry')
 param acrName string
+
 @description('The name of the App Service Plan')
 param appServicePlanName string
-@description('The name of the Web App')
+
+@description('The API App name (backend)')
 param webAppName string
+
 @description('The name of the container image')
 param containerRegistryImageName string
+
 @description('The version/tag of the container image')
 param containerRegistryImageVersion string
+
 @description('The key vault name')
 param keyVaultName string
-@description('Role assignments for the Key Vault')
+
+@description('Role assignments for Key Vault')
 param keyVaultRoleAssignments array = []
 
-// ACR deployment
-module acr 'modules/acr.bicep' = {
-  name: 'acrDeployment'
-  params: {
-    name: acrName
-    location: location
-    acrAdminUserEnabled: true
-  }
-}
-
-// Initial Key Vault deployment
+// Key Vault deployment
 module keyVault 'modules/key-vault.bicep' = {
   name: 'keyVault'
   params: {
-    roleAssignments: keyVaultRoleAssignments
-    location: location
     keyVaultName: keyVaultName
+    location: location
+    roleAssignments: keyVaultRoleAssignments
   }
 }
 
@@ -43,21 +41,20 @@ resource keyVaultReference 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   ]
 }
 
-// Add Key Vault secrets for ACR credentials
-resource acrPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  parent: keyVaultReference
-  name: 'acr-password'
-  properties: {
-    value: acr.outputs.adminPassword
+// ACR deployment
+module acr 'modules/acr.bicep' = {
+  name: 'acrDeployment'
+  params: {
+    name: acrName
+    location: location
+    keyVaultResourceId: keyVault.outputs.keyVaultResourceId
+    keyVaultSecretNameAdminUsername: 'acr-username'
+    keyVaultSecretNameAdminPassword0: 'acr-password0'
+    keyVaultSecretNameAdminPassword1: 'acr-password1'
   }
-}
-
-resource acrUsernameSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  parent: keyVaultReference
-  name: 'acr-username'
-  properties: {
-    value: acr.outputs.adminUsername
-  }
+  dependsOn: [
+    keyVault
+  ]
 }
 
 // App Service Plan deployment
@@ -75,39 +72,21 @@ module appServicePlan 'modules/app-service-plan.bicep' = {
 module webApp 'modules/web-app.bicep' = {
   name: 'webAppDeployment'
   params: {
-    name: webAppName
+    appServiceAPIAppName: webAppName
     location: location
-    kind: 'app'
-    serverFarmResourceId: appServicePlan.outputs.id
-    identity: {
-      type: 'SystemAssigned'
-    }
-    siteConfig: {
-      linuxFxVersion: 'DOCKER|${acr.outputs.loginServer}/${containerRegistryImageName}:${containerRegistryImageVersion}'
-      appCommandLine: ''
-    }
-    appSettingsKeyValuePairs: {
-      WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'false'
-      DOCKER_REGISTRY_SERVER_URL: 'https://${acr.outputs.loginServer}'
-      DOCKER_REGISTRY_SERVER_USERNAME: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.keyVaultUri}/secrets/acr-username/)'
-      DOCKER_REGISTRY_SERVER_PASSWORD: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.keyVaultUri}/secrets/acr-password/)'
-    }
+    appServicePlanId: appServicePlan.outputs.id
+    containerRegistryName: acrName
+    dockerRegistryServerUserName: keyVaultReference.getSecret('acr-username')
+    dockerRegistryServerPassword: keyVaultReference.getSecret('acr-password0')
+    dockerRegistryImageName: containerRegistryImageName
+    dockerRegistryImageTag: containerRegistryImageVersion
   }
   dependsOn: [
     acr
     appServicePlan
-    acrPasswordSecret
-    acrUsernameSecret
   ]
 }
 
-// Add RBAC role assignment for web app to access Key Vault secrets
-resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(keyVaultReference.id, webApp.name, 'Key Vault Secrets User')
-  scope: keyVaultReference
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
-    principalId: webApp.outputs.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
+// Outputs
+output webAppHostName string = webApp.outputs.backendAppHostName
+output keyVaultResourceId string = keyVault.outputs.keyVaultResourceId

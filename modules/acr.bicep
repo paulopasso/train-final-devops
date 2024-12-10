@@ -1,27 +1,63 @@
+param keyVaultResourceId string
+param keyVaultSecretNameAdminUsername string
 #disable-next-line secure-secrets-in-params
-@description('The name of the container registry')
+param keyVaultSecretNameAdminPassword0 string
+#disable-next-line secure-secrets-in-params
+param keyVaultSecretNameAdminPassword1 string
+
+@description('The name of the Azure Container Registry')
 param name string
 
-@description('The location of the container registry')
-param location string
+@description('The Azure location where the Container Registry will be deployed')
+param location string = resourceGroup().location
 
-@description('Enable admin user for the container registry')
-param acrAdminUserEnabled bool
-
-resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: name
   location: location
   sku: {
     name: 'Basic'
   }
   properties: {
-    adminUserEnabled: acrAdminUserEnabled
+    adminUserEnabled: true
   }
 }
 
-// Outputs needed by the web app
-output loginServer string = acr.properties.loginServer
+// Reference an existing Key Vault if provided
+resource adminCredentialsKeyVault 'Microsoft.KeyVault/vaults@2021-10-01' existing = if (!empty(keyVaultResourceId)) {
+  name: last(split(keyVaultResourceId, '/'))
+}
+
+// create a secret to store the container registry admin username
+resource secretAdminUserName 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if (!empty(keyVaultSecretNameAdminUsername)) {
+  name: keyVaultSecretNameAdminUsername
+  parent: adminCredentialsKeyVault
+  properties: {
+    value: containerRegistry.listCredentials().username
+  }
+}
+
+// create a secret to store the container registry admin password 0
+resource secretAdminUserPassword0 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if (!empty(keyVaultSecretNameAdminPassword0)) {
+  name: keyVaultSecretNameAdminPassword0
+  parent: adminCredentialsKeyVault
+  properties: {
+    value: containerRegistry.listCredentials().passwords[0].value
+  }
+}
+
+// create a secret to store the container registry admin password 1
+resource secretAdminUserPassword1 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if (!empty(keyVaultSecretNameAdminPassword1)) {
+  name: keyVaultSecretNameAdminPassword1
+  parent: adminCredentialsKeyVault
+  properties: {
+    value: containerRegistry.listCredentials().passwords[1].value
+  }
+}
+
 #disable-next-line outputs-should-not-contain-secrets
-output adminUsername string = acrAdminUserEnabled ? acr.listCredentials().username : ''
+output containerRegistryUserName string = containerRegistry.listCredentials().username
 #disable-next-line outputs-should-not-contain-secrets
-output adminPassword string = acrAdminUserEnabled ? acr.listCredentials().passwords[0].value : ''
+output containerRegistryPassword0 string = containerRegistry.listCredentials().passwords[0].value
+#disable-next-line outputs-should-not-contain-secrets
+output containerRegistryPassword1 string = containerRegistry.listCredentials().passwords[1].value
+output containerRegistryLoginServer string = containerRegistry.properties.loginServer

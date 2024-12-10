@@ -1,42 +1,51 @@
-@description('The name of the web app')
-param name string
+@description('The API App name (backend)')
+@minLength(3)
+@maxLength(24)
+param appServiceAPIAppName string
 
-@description('The location of the web app')
-param location string
+@description('The Azure location where the Backend API App will be deployed')
+param location string = resourceGroup().location
 
-@description('The kind of web app')
-param kind string
+@description('The App Service Plan ID for the Backend API App')
+param appServicePlanId string
 
-@description('The ID of the App Service Plan')
-param serverFarmResourceId string
+param containerRegistryName string
 
-@description('The site configuration for the web app')
-param siteConfig object
+@secure()
+param dockerRegistryServerUserName string
 
-@description('The app settings for the web app')
-param appSettingsKeyValuePairs object
+@secure()
+param dockerRegistryServerPassword string
 
-@description('The identity configuration for the web app')
-param identity object
+param dockerRegistryImageName string
 
-resource webApp 'Microsoft.Web/sites@2022-09-01' = {
-  name: name
+param dockerRegistryImageTag string
+
+param appCommandLine string = ''
+
+var dockerAppSettings = [
+  { name: 'DOCKER_REGISTRY_SERVER_URL', value: 'https://${containerRegistryName}.azurecr.io' }
+  { name: 'DOCKER_REGISTRY_SERVER_USERNAME', value: dockerRegistryServerUserName }
+  { name: 'DOCKER_REGISTRY_SERVER_PASSWORD', value: dockerRegistryServerPassword }
+  { name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE', value: 'true' }  // Allows docker container to have access to env variables
+]
+
+resource appServiceAPIApp 'Microsoft.Web/sites@2022-03-01' = {
+  name: appServiceAPIAppName
   location: location
-  kind: kind
-  identity: identity  // Add this line
+  identity: { type: 'SystemAssigned' }
   properties: {
-    serverFarmId: serverFarmResourceId
-    siteConfig: siteConfig
+    serverFarmId: appServicePlanId
+    httpsOnly: true
+    siteConfig: {
+      linuxFxVersion: 'DOCKER|${containerRegistryName}.azurecr.io/${dockerRegistryImageName}:${dockerRegistryImageTag}'
+      alwaysOn: false
+      ftpsState: 'FtpsOnly'
+      appCommandLine: appCommandLine
+      appSettings: dockerAppSettings
+    }
   }
 }
 
-resource webAppSettings 'Microsoft.Web/sites/config@2022-09-01' = {
-  parent: webApp
-  name: 'appsettings'
-  properties: appSettingsKeyValuePairs
-}
-
-// Add these outputs
-output name string = webApp.name
-output defaultHostName string = webApp.properties.defaultHostName
-output principalId string = webApp.identity.principalId  // Add this line for RBAC
+output backendAppHostName string = appServiceAPIApp.properties.defaultHostName
+output systemAssignedIdentityPrincipalId string = appServiceAPIApp.identity.principalId
