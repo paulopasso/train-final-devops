@@ -33,7 +33,7 @@ jobs:
       KEY_VAULT_NAME_DEV: "dkumlin-demo-keyvault"
       KEY_VAULT_SECRET_ACR_USERNAME: "acr-username"
       KEY_VAULT_SECRET_ACR_PASSWORD: "acr-password0"
-      CONTAINER_REGISTRY_SERVER_URL_DEV: "dkumlinacrdemo.io"
+      CONTAINER_REGISTRY_SERVER_URL_DEV: "dkumlinacrdemo.azurecr.io"
       IMAGE_NAME_DEV: "dkumlin-demo-image"
     steps:
       - uses: actions/checkout@v3
@@ -51,6 +51,8 @@ jobs:
             echo "Attempting to access key vault: ${{ env.KEY_VAULT_NAME_DEV }}"
             username=$(az keyvault secret show --name ${{ env.KEY_VAULT_SECRET_ACR_USERNAME }} --vault-name ${{ env.KEY_VAULT_NAME_DEV }} --query value -o tsv)
             password=$(az keyvault secret show --name ${{ env.KEY_VAULT_SECRET_ACR_PASSWORD }} --vault-name ${{ env.KEY_VAULT_NAME_DEV }} --query value -o tsv)
+            echo "username=$username" >> $GITHUB_OUTPUT
+            echo "password=$password" >> $GITHUB_OUTPUT
 
       - name: Docker Login
         uses: azure/docker-login@v2
