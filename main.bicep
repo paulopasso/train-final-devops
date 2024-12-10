@@ -63,13 +63,6 @@ module appServicePlan 'modules/app-service-plan.bicep' = {
   params: {
     name: appServicePlanName
     location: location
-    sku: {
-      capacity: 1
-      family: 'B'
-      name: 'B1'
-      size: 'B1'
-      tier: 'Basic'
-    }
     kind: 'Linux'
     reserved: true
   }
@@ -105,9 +98,8 @@ module webApp 'modules/web-app.bicep' = {
   ]
 }
 
-// Add RBAC role assignment for web app to access Key Vault secrets
 resource webAppKeyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(webApp.outputs.principalId, keyVault.outputs.keyVaultUri, 'Key Vault Secrets User')
+  name: guid(resourceGroup().id, webApp.name, 'Key Vault Secrets User')
   scope: keyVaultReference
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
