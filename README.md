@@ -68,7 +68,7 @@ Created `.github/workflows/workflow.yaml` with three main stages:
 1. **Fork/Clone the Repository**
 
 2. **Update Parameters**
-   Replace all instances of `dkumlin` with your identifier in:
+   Replace all instances of `apuliga` with your identifier in:
 
    ```json
    // main.parameters.json
