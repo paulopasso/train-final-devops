@@ -6,7 +6,7 @@
       "value": "westeurope"
     },
     "acrName": {
-      "value": "dkumlinacrdemo"  
+      "value": "dkumlinacrdemo"
     },
     "appServicePlanName": {
       "value": "dkumlin-demo-service-plan"
@@ -21,7 +21,7 @@
       "value": "latest"
     },
     "keyVaultName": {
-      "value": "dkumlin-demo-keyvault"  
+      "value": "dkumlin-demo-keyvault"
     },
     "keyVaultRoleAssignments": {
       "value": [
@@ -39,3 +39,4 @@
     }
   }
 }
+

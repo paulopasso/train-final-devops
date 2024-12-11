@@ -9,7 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RESOURCE_GROUP: BCSAI2024-DEVOPS-STUDENTS-B-DEV
-      LOCATION: "westeurope"
     steps:
       - uses: actions/checkout@v3
 

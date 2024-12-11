@@ -1,6 +1,4 @@
 @description('The API App name (backend)')
-@minLength(3)
-@maxLength(24)
 param appServiceAPIAppName string
 
 @description('The Azure location where the Backend API App will be deployed')
@@ -27,7 +25,7 @@ var dockerAppSettings = [
   { name: 'DOCKER_REGISTRY_SERVER_URL', value: 'https://${containerRegistryName}.azurecr.io' }
   { name: 'DOCKER_REGISTRY_SERVER_USERNAME', value: dockerRegistryServerUserName }
   { name: 'DOCKER_REGISTRY_SERVER_PASSWORD', value: dockerRegistryServerPassword }
-  { name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE', value: 'true' }  // Allows docker container to have access to env variables
+  { name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE', value: 'true' } // Allows docker container to have access to env variables
 ]
 
 resource appServiceAPIApp 'Microsoft.Web/sites@2022-03-01' = {
