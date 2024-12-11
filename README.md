@@ -1,20 +1,110 @@
-# Deploy a Python (Flask) web app to Azure App Service - Sample Application
+# Python Flask Web Application Deployment to Azure
 
-This project demonstrates how to deploy a containerized Python Flask application to Azure using Infrastructure as Code (IaC) with Bicep and GitHub Actions for CI/CD.
+This project demonstrates how to containerize a Python Flask application and deploy it to Azure using Infrastructure as Code (Bicep) and GitHub Actions.
 
-## Infrastructure Components
+## Development Process Steps
 
-The solution consists of three main Azure resources:
+### 1. Container Development and Local Testing
 
-1. **Azure Key Vault** - Securely stores credentials
-2. **Azure Container Registry (ACR)** - Hosts the application container images
-3. **Azure Web App** - Runs the containerized application
+First, I developed and tested the application locally:
+
+```bash
+# Build the container
+docker build -t myapp .
+
+# Run and test locally
+docker run -p 5000:5000 myapp
+
+# Test in browser: http://localhost:5000
+```
+
+### 2. Infrastructure Development
+
+After confirming the container works, I built the infrastructure in steps:
+
+1. Created `main.bicep` with basic resource structure:
+
+   - Key Vault
+   - Container Registry
+   - Web App
+
+2. Developed individual module files in `/modules`:
+   - `key-vault.bicep`: Stores ACR credentials securely
+   - `container-registry.bicep`: Hosts our container images
+   - `web-app.bicep`: Runs our containerized application
+
+### 3. GitHub Actions Workflow
+
+Created `.github/workflows/workflow.yaml` with three main stages:
+
+1. **Infrastructure Deployment Stage**
+
+   - Deploys all Bicep templates
+   - Creates/updates Azure resources
+   - Sets up RBAC permissions
+
+2. **Container Build & Push Stage**
+
+   - Builds the Docker image
+   - Tags with git SHA
+   - Pushes to Azure Container Registry
+
+3. **Web App Deployment Stage**
+   - Pulls latest image from ACR
+   - Deploys to Azure Web App
+   - Updates container configuration
+
+## How to Use This Project
+
+### Prerequisites
+
+- Azure Subscription
+- GitHub Account
+- Docker Desktop
+- Azure CLI
+
+### Deployment Steps
+
+1. **Fork/Clone the Repository**
+
+2. **Update Parameters**
+   Replace all instances of `dkumlin` with your identifier in:
+
+   ```json
+   // main.parameters.json
+   {
+     "keyVaultName": { "value": "yourname-kv" },
+     "containerRegistryName": { "value": "yourname-cr" },
+     "webAppName": { "value": "yourname-webapp" }
+   }
+   ```
+
+3. **Configure GitHub Secrets**
+   Add to your repository:
+
+   - `AZURE_CREDENTIALS`
+   - `AZURE_SUBSCRIPTION`
+
+4. **Update Workflow Variables**
+   In `.github/workflows/workflow.yaml`:
+
+   ```yaml
+   env:
+     KEY_VAULT_NAME_DEV: "yourname-kv"
+     CONTAINER_REGISTRY_SERVER_URL_DEV: "yournamecr.azurecr.io"
+     IMAGE_NAME_DEV: "yourname-app"
+     WEB_APP: "yourname-webapp"
+   ```
+
+5. **Deploy**
+   - Push to main branch
+   - GitHub Actions will handle the deployment
 
 ## Project Structure
 
 ```
 ├── .github/workflows/
-│   └── workflow.yaml        # GitHub Actions CI/CD pipeline
+│   └── workflow.yaml        # CI/CD pipeline
 ├── modules/
 │   ├── key-vault.bicep      # Key Vault infrastructure
 │   ├── container-registry.bicep  # ACR infrastructure
@@ -24,137 +114,30 @@ The solution consists of three main Azure resources:
 └── Dockerfile             # Container image definition
 ```
 
-## Getting Started
-
-### 1. Customize Parameters
-
-Before deploying, modify `main.parameters.json` to replace existing names with your own:
-
-- Replace all instances of `dkumlin` with your identifier
-- Example changes:
-  ```json
-  {
-    "keyVaultName": { "value": "yourname-kv" },
-    "containerRegistryName": { "value": "yournamecr" },
-    "webAppName": { "value": "yourname-webapp" }
-  }
-  ```
-
-### 2. Update GitHub Workflow
-
-Modify `.github/workflows/workflow.yaml` environment variables:
-
-```yaml
-env:
-  KEY_VAULT_NAME_DEV: "yourname-kv"
-  CONTAINER_REGISTRY_SERVER_URL_DEV: "yournamecr.azurecr.io"
-  IMAGE_NAME_DEV: "yourname-app"
-  WEB_APP: "yourname-webapp"
-```
-
-### 3. Configure GitHub Secrets
-
-Set up required GitHub repository secrets:
-
-- `AZURE_CREDENTIALS`: Service principal credentials
-- `AZURE_SUBSCRIPTION`: Subscription ID (For the resource subsciption)
-
-## How the Infrastructure Works
-
-### Deployment Flow
-
-1. **Infrastructure Deployment**
-
-   - Bicep templates create/update Azure resources
-   - RBAC permissions are configured automatically
-   - Resources are created in the specified order:
-     1. Key Vault
-     2. Container Registry
-     3. Web App
-
-2. **Application Deployment**
-   - GitHub Actions workflow:
-     1. Builds container image
-     2. Retrieves ACR credentials from Key Vault
-     3. Pushes image to ACR
-     4. Deploys to Web App
-
-### Customizing the Infrastructure
-
-#### Modify Key Vault (modules/key-vault.bicep)
-
-- Change SKU tier
-- Add/modify role assignments
-- Adjust network access rules
-
-```bicep
-resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
-  properties: {
-    sku: {
-      family: 'A'
-      name: 'standard'  // Change to 'premium' if needed
-    }
-    // Add network rules here
-  }
-}
-```
-
-#### Customize Container Registry (modules/container-registry.bicep)
-
-- Change SKU
-- Enable/disable features
-- Configure geo-replication
-
-```bicep
-resource acr 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
-  sku: {
-    name: 'Basic'  // Change to 'Standard' or 'Premium'
-  }
-}
-```
-
-#### Modify Web App (modules/web-app.bicep)
-
-- Change pricing tier
-- Adjust app settings
-- Configure scaling
-
-```bicep
-resource webApp 'Microsoft.Web/sites@2022-03-01' = {
-  properties: {
-    siteConfig: {
-      linuxFxVersion: 'DOCKER|${containerImage}'
-      // Add custom app settings
-      appSettings: []
-    }
-  }
-}
-```
-
 ## Troubleshooting
 
-Common issues and solutions:
+### Common Issues
 
-1. **Deployment Failures**
+1. **Resource Name Conflicts**
 
-   - Check resource name uniqueness
-   - Verify service principal permissions
-   - Review deployment logs in Azure Portal
+   - Ensure all resource names are unique
+   - Update parameters with your unique identifiers
 
-2. **Container Issues**
+2. **Container Registry Access**
 
-   - Verify ACR credentials in Key Vault
-   - Check container logs in Web App
-   - Ensure container image exists in ACR
+   - Verify Key Vault contains correct ACR credentials
+   - Check service principal has proper permissions
 
-3. **Access Issues**
-   - Check RBAC role assignments
-   - Verify service principal hasn't expired
-   - Confirm Key Vault access policies
+3. **Web App Deployment**
+   - Check container logs in Azure Portal
+   - Verify container image exists in ACR
+   - Confirm Web App configuration matches container
 
-## Prerequisites
+### Useful Commands
 
-- Azure Subscription
-- GitHub Account
-- Azure CLI (for local testing)
-- Docker (for local testing)
+```bash
+# Check container locally
+docker build -t myapp .
+docker run -p 5000:5000 myapp
+
+```

@@ -21,7 +21,7 @@
       "value": "latest"
     },
     "keyVaultName": {
-      "value": "dkumlin-demo-keyVault"
+      "value": "dkumlin-demo-keyvault-test"
     },
     "keyVaultRoleAssignments": {
       "value": [
