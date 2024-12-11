@@ -25,15 +25,36 @@ jobs:
           template: ./main.bicep
           parameters: ./main.parameters.json
 
-  build-and-push-image:
+  run-tests:
+    runs-on: ubuntu-latest
     needs: deploy-infrastructure
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run tests
+        run: |
+          PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/
+
+  build-and-push-image:
+    needs: [deploy-infrastructure, run-tests]
     runs-on: ubuntu-latest
     env:
-      KEY_VAULT_NAME_DEV: "dkumlin-demo-kvtest"
+      KEY_VAULT_NAME_DEV: "apuliga-demo-kvtest"
       KEY_VAULT_SECRET_ACR_USERNAME: "acr-username"
       KEY_VAULT_SECRET_ACR_PASSWORD: "acr-password0"
-      CONTAINER_REGISTRY_SERVER_URL_DEV: "dkumlinacrdemo.azurecr.io"
-      IMAGE_NAME_DEV: "dkumlin-demo-image"
+      CONTAINER_REGISTRY_SERVER_URL_DEV: "apuligaacrdemo.azurecr.io"
+      IMAGE_NAME_DEV: "apuliga-demo-image"
     steps:
       - uses: actions/checkout@v3
 
@@ -75,9 +96,9 @@ jobs:
     needs: build-and-push-image
     runs-on: ubuntu-latest
     env:
-      CONTAINER_REGISTRY_SERVER_URL_DEV: "dkumlinacrdemo.azurecr.io"
-      IMAGE_NAME_DEV: "dkumlin-demo-image"
-      WEB_APP: "dkumlin-demo-web-app"
+      CONTAINER_REGISTRY_SERVER_URL_DEV: "apuligaacrdemo.azurecr.io"
+      IMAGE_NAME_DEV: "apuliga-demo-image"
+      WEB_APP: "apuliga-demo-web-app"
     steps:
       - name: Login to Azure CLI
         uses: azure/login@v1

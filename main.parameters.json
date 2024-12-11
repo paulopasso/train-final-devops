@@ -6,22 +6,22 @@
       "value": "westeurope"
     },
     "acrName": {
-      "value": "dkumlinacrdemo"
+      "value": "apuligaacrdemo"
     },
     "appServicePlanName": {
-      "value": "dkumlin-demo-service-plan"
+      "value": "apuliga-demo-service-plan"
     },
     "webAppName": {
-      "value": "dkumlin-demo-web-app"
+      "value": "apuliga-demo-web-app"
     },
     "containerRegistryImageName": {
-      "value": "dkumlin-demo-image"
+      "value": "apuliga-demo-image"
     },
     "containerRegistryImageVersion": {
       "value": "latest"
     },
     "keyVaultName": {
-      "value": "dkumlin-demo-kvtest"
+      "value": "apuliga-demo-kvtest"
     },
     "keyVaultRoleAssignments": {
       "value": [
