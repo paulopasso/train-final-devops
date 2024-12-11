@@ -43,13 +43,19 @@ Created `.github/workflows/workflow.yaml` with three main stages:
    - Creates/updates Azure resources
    - Sets up RBAC permissions
 
-2. **Container Build & Push Stage**
+2. **Run Tests Stage**
+
+   - Builds the Docker image
+   - Runs tests on the container
+   - Exits with error if tests fail
+
+3. **Container Build & Push Stage**
 
    - Builds the Docker image
    - Tags with git SHA
    - Pushes to Azure Container Registry
 
-3. **Web App Deployment Stage**
+4. **Web App Deployment Stage**
    - Pulls latest image from ACR
    - Deploys to Azure Web App
    - Updates container configuration
@@ -68,7 +74,7 @@ Created `.github/workflows/workflow.yaml` with three main stages:
 1. **Fork/Clone the Repository**
 
 2. **Update Parameters**
-   Replace all instances of `apuliga` with your identifier in:
+   Replace all instances of `yourname` with your identifier in:
 
    ```json
    // main.parameters.json
