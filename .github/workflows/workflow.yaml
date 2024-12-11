@@ -29,7 +29,7 @@ jobs:
     needs: deploy-infrastructure
     runs-on: ubuntu-latest
     env:
-      KEY_VAULT_NAME_DEV: "dkumlin-demo-keyvault-test"
+      KEY_VAULT_NAME_DEV: "dkumlin-demo-kvtest"
       KEY_VAULT_SECRET_ACR_USERNAME: "acr-username"
       KEY_VAULT_SECRET_ACR_PASSWORD: "acr-password0"
       CONTAINER_REGISTRY_SERVER_URL_DEV: "dkumlinacrdemo.azurecr.io"
